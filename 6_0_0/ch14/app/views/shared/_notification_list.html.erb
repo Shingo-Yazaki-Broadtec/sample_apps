@@ -1,0 +1,23 @@
+<h3>Notification</h3>
+
+<div>
+  <div>
+    <% if @notifications.present? %>
+        <ul>
+            <% @notifications.each do |notification| %>
+                <% if notification['action'] == 'login' %>
+                    <li>初回ログインありがとうございます。</li>
+                <% elsif notification['action'] == 'followed' %>
+                    <% if notification['count'] > 0 %>
+                        <li><%= notification['name'] %>さん他<%= notification['count'] %>名にフォローされました。</li>
+                    <% elsif notification['count'] == 0 %>
+                        <li><%= notification['name'] %>さんにフォローされました。</li>
+                    <% end %>
+                <% end %>
+            <% end %>
+        </ul>
+    <% else %>
+        <p>通知はありません</p>
+    <% end %>
+  </div>
+</div>
