@@ -9,6 +9,10 @@ class User < ApplicationRecord
                                    dependent:   :destroy
   has_many :following, through: :active_relationships,  source: :followed
   has_many :followers, through: :passive_relationships, source: :follower
+
+  has_many :add_notifications, class_name: "Notification", foreign_key: "user_id", dependent: :destroy
+  has_many :passive_notifications, class_name: "Notification", foreign_key: "user_id", dependent: :destroy
+
   attr_accessor :remember_token, :activation_token, :reset_token
   before_save   :downcase_email
   before_create :create_activation_digest
@@ -89,6 +93,7 @@ class User < ApplicationRecord
   # ユーザーをフォローする
   def follow(other_user)
     following << other_user
+    Notification.create(:user_id => other_user.id, :action => 'followed', :followed_id => self.id)
   end
 
   # ユーザーをフォロー解除する
@@ -99,6 +104,39 @@ class User < ApplicationRecord
   # 現在のユーザーがフォローしてたらtrueを返す
   def following?(other_user)
     following.include?(other_user)
+  end
+
+  def notification_list
+    notifications = passive_notifications
+    list = []
+
+    base_date = ''
+    base_key = 0
+    notifications.each_with_index do | notification, index |
+      list_info = {}
+      if notification.action == 'followed'
+        user = User.find(notification.followed_id)
+        list_info['name'] = user.name
+        list_info['date'] = notification.created_at
+        list_info['count'] = 0
+        if base_date.present?
+          if base_date.since(5.minutes) > notification.created_at
+            list[base_key]['count'] += 1
+            list_info['count'] = -1
+          else
+            base_date = notification.created_at
+            base_key = index
+          end
+        else
+          base_date = notification.created_at
+          base_key = index
+        end
+      end
+      list_info['action'] = notification.action
+      list.push(list_info)
+    end
+
+    list
   end
 
   private
